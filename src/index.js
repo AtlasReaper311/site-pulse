@@ -53,21 +53,22 @@ export default {
 async function fetchAnalytics(env) {
   const now = new Date();
   const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const host = env.SITE_HOST || "atlas-systems.uk";
 
   const query = `
-    query SitePulse($zoneTag: string!, $start: Time!, $end: Time!) {
+    query SitePulse($zoneTag: string!, $start: Time!, $end: Time!, $host: string!) {
       viewer {
         zones(filter: { zoneTag: $zoneTag }) {
           total: httpRequestsAdaptiveGroups(
             limit: 1
-            filter: { datetime_geq: $start, datetime_leq: $end, requestSource: "eyeball" }
+            filter: { datetime_geq: $start, datetime_leq: $end, requestSource: "eyeball", clientRequestHTTPHost: $host }
           ) {
             sum { visits }
           }
           byHour: httpRequestsAdaptiveGroups(
             limit: 24
             orderBy: [datetimeHour_ASC]
-            filter: { datetime_geq: $start, datetime_leq: $end, requestSource: "eyeball" }
+            filter: { datetime_geq: $start, datetime_leq: $end, requestSource: "eyeball", clientRequestHTTPHost: $host }
           ) {
             sum { visits }
             dimensions { datetimeHour }
@@ -75,7 +76,7 @@ async function fetchAnalytics(env) {
           topPages: httpRequestsAdaptiveGroups(
             limit: 10
             orderBy: [count_DESC]
-            filter: { datetime_geq: $start, datetime_leq: $end, requestSource: "eyeball" }
+            filter: { datetime_geq: $start, datetime_leq: $end, requestSource: "eyeball", clientRequestHTTPHost: $host }
           ) {
             count
             dimensions { clientRequestPath }
@@ -87,31 +88,20 @@ async function fetchAnalytics(env) {
 
   const res = await fetch(GRAPHQL_ENDPOINT, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       query,
-      variables: { zoneTag: env.ZONE_TAG, start: start.toISOString(), end: now.toISOString() },
+      variables: { zoneTag: env.ZONE_TAG, start: start.toISOString(), end: now.toISOString(), host },
     }),
   });
 
   const data = await res.json();
-  if (data.errors) {
-    throw new Error(data.errors.map((e) => e.message).join("; "));
-  }
+  if (data.errors) throw new Error(data.errors.map((e) => e.message).join("; "));
 
   const zone = data?.data?.viewer?.zones?.[0];
   const totalVisits = zone?.total?.[0]?.sum?.visits ?? 0;
-  const byHour = (zone?.byHour ?? []).map((row) => ({
-    hour: row.dimensions.datetimeHour,
-    visits: row.sum.visits,
-  }));
-  const topPages = (zone?.topPages ?? []).map((row) => ({
-    path: row.dimensions.clientRequestPath,
-    requests: row.count,
-  }));
+  const byHour = (zone?.byHour ?? []).map((row) => ({ hour: row.dimensions.datetimeHour, visits: row.sum.visits }));
+  const topPages = (zone?.topPages ?? []).map((row) => ({ path: row.dimensions.clientRequestPath, requests: row.count }));
 
   return { generatedAt: now.toISOString(), rangeHours: 24, totalVisits, byHour, topPages };
 }
