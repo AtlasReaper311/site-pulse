@@ -17,7 +17,7 @@ routes = [
 
 [[kv_namespaces]]
 binding = "PULSE_CACHE"
-id = "REPLACE_WITH_NAMESPACE_ID"
+id = "fe85fc9c743044918a5fd1817ced5421"
 
 [vars]
 ZONE_TAG = "8ba6350a78c988447c111048b125f917"
