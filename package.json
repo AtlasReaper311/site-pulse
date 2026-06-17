@@ -1,0 +1,15 @@
+{
+  "name": "site-pulse",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only proxy between atlas-systems.uk and Cloudflare's GraphQL Analytics API.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
