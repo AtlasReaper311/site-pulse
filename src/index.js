@@ -52,7 +52,7 @@ export default {
 
 async function fetchAnalytics(env) {
   const now = new Date();
-  const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   const query = `
     query SitePulse($zoneTag: string!, $start: Time!, $end: Time!) {
@@ -64,13 +64,13 @@ async function fetchAnalytics(env) {
           ) {
             sum { visits }
           }
-          byDay: httpRequestsAdaptiveGroups(
-            limit: 31
-            orderBy: [datetimeDay_ASC]
+          byHour: httpRequestsAdaptiveGroups(
+            limit: 24
+            orderBy: [datetimeHour_ASC]
             filter: { datetime_geq: $start, datetime_leq: $end, requestSource: "eyeball" }
           ) {
             sum { visits }
-            dimensions { datetimeDay }
+            dimensions { datetimeHour }
           }
           topPages: httpRequestsAdaptiveGroups(
             limit: 10
@@ -104,8 +104,8 @@ async function fetchAnalytics(env) {
 
   const zone = data?.data?.viewer?.zones?.[0];
   const totalVisits = zone?.total?.[0]?.sum?.visits ?? 0;
-  const byDay = (zone?.byDay ?? []).map((row) => ({
-    date: row.dimensions.datetimeDay,
+  const byHour = (zone?.byHour ?? []).map((row) => ({
+    hour: row.dimensions.datetimeHour,
     visits: row.sum.visits,
   }));
   const topPages = (zone?.topPages ?? []).map((row) => ({
@@ -113,7 +113,7 @@ async function fetchAnalytics(env) {
     requests: row.count,
   }));
 
-  return { generatedAt: now.toISOString(), rangeDays: 30, totalVisits, byDay, topPages };
+  return { generatedAt: now.toISOString(), rangeHours: 24, totalVisits, byHour, topPages };
 }
 
 function json(status, body, extraHeaders = {}) {
