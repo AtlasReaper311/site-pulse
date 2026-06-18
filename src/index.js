@@ -1,14 +1,3 @@
-/**
- * site-pulse
- *
- * Read-only proxy between atlas-systems.uk and Cloudflare's GraphQL
- * Analytics API. Same backend-for-frontend shape as github-pulse: the
- * site fetches one clean JSON document; this Worker holds the
- * analytics-scoped API token and handles caching, so the token never
- * reaches the browser and a burst of visitors costs one upstream
- * query, not one per page view.
- */
-
 const GRAPHQL_ENDPOINT = "https://api.cloudflare.com/client/v4/graphql";
 const CACHE_KEY = "site-pulse:summary";
 
@@ -18,6 +7,10 @@ export default {
 
     if (request.method === "GET" && url.pathname.endsWith("/health")) {
       return json(200, { ok: true, service: "site-pulse" });
+    }
+
+    if (request.method === "GET" && url.pathname.endsWith("/weekly")) {
+      return await handleWeekly(env);
     }
 
     if (request.method !== "GET") {
@@ -48,7 +41,41 @@ export default {
     await env.PULSE_CACHE.put(CACHE_KEY, JSON.stringify(summary), { expirationTtl: ttlSeconds });
     return json(200, summary, { "x-pulse-cache": "MISS" });
   },
+
+  // Runs once a day per the cron in wrangler.toml. Computes that day's
+  // real 24h visit total and stores it under a dated key, working
+  // around the platform's 1-day query window by accumulating daily
+  // snapshots instead of trying to query a longer range in one call.
+  async scheduled(event, env, ctx) {
+    const summary = await fetchAnalytics(env);
+    const today = new Date().toISOString().slice(0, 10);
+    await env.PULSE_CACHE.put(
+      `site-pulse:daily:${today}`,
+      JSON.stringify({ date: today, visits: summary.totalVisits }),
+      { expirationTtl: 60 * 60 * 24 * 40 } // keep 40 days, comfortably more than the 7 a rolling week needs
+    );
+  },
 };
+
+async function handleWeekly(env) {
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const entry = await env.PULSE_CACHE.get(`site-pulse:daily:${date}`, { type: "json" });
+    days.push({ date, visits: entry?.visits ?? null });
+  }
+  days.reverse(); // oldest to newest
+
+  const known = days.filter((d) => d.visits !== null);
+  const totalVisits = known.reduce((sum, d) => sum + d.visits, 0);
+
+  return json(200, {
+    generatedAt: new Date().toISOString(),
+    daysCollected: known.length,
+    totalVisits,
+    days,
+  });
+}
 
 async function fetchAnalytics(env) {
   const now = new Date();
