@@ -6,8 +6,8 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname.endsWith("/health")) {
-      return json(200, { ok: true, service: "site-pulse" });
-    }
+  return json(200, { ok: true, service: "atlas-notify" }, { "Access-Control-Allow-Origin": "https://status.atlas-systems.uk" });
+}
 
     if (request.method === "GET" && url.pathname.endsWith("/weekly")) {
       return await handleWeekly(env);
