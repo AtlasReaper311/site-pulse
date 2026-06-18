@@ -23,14 +23,6 @@ export default {
 
     const ALLOWED_ORIGINS = ["https://atlas-systems.uk", "https://www.atlas-systems.uk", "https://status.atlas-systems.uk"];
 
-    function corsHeaders(request) {
-    const origin = request.headers.get("Origin");
-    const headers = { Vary: "Origin" };
-    if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    headers["Access-Control-Allow-Origin"] = origin;
-    }
-    return headers;
-  }
     
     const ttlSeconds = Number(env.CACHE_TTL_SECONDS || 3600);
     const cached = await env.PULSE_CACHE.get(CACHE_KEY, { type: "json" });
@@ -150,3 +142,12 @@ function json(status, body, extraHeaders = {}) {
     headers: { "content-type": "application/json", ...extraHeaders },
   });
 }
+
+function corsHeaders(request) {
+    const origin = request.headers.get("Origin");
+    const headers = { Vary: "Origin" };
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+    }
+    return headers;
+  }
