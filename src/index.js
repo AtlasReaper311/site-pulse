@@ -6,7 +6,7 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname.endsWith("/health")) {
-  return json(200, { ok: true, service: "atlas-notify" }, { "Access-Control-Allow-Origin": "https://status.atlas-systems.uk" });
+  return json(200, { ok: true, service: "atlas-notify" }, corsHeaders(request));
 }
 
     if (request.method === "GET" && url.pathname.endsWith("/weekly")) {
@@ -21,6 +21,17 @@ export default {
       return json(500, { ok: false, error: "Cloudflare credentials are not configured" });
     }
 
+    const ALLOWED_ORIGINS = ["https://atlas-systems.uk", "https://www.atlas-systems.uk", "https://status.atlas-systems.uk"];
+
+    function corsHeaders(request) {
+    const origin = request.headers.get("Origin");
+    const headers = { Vary: "Origin" };
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+    }
+    return headers;
+  }
+    
     const ttlSeconds = Number(env.CACHE_TTL_SECONDS || 3600);
     const cached = await env.PULSE_CACHE.get(CACHE_KEY, { type: "json" });
     if (cached) {
