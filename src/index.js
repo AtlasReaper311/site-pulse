@@ -1,5 +1,6 @@
 const GRAPHQL_ENDPOINT = "https://api.cloudflare.com/client/v4/graphql";
 const CACHE_KEY = "site-pulse:summary";
+const ALLOWED_ORIGINS = ["https://atlas-systems.uk", "https://www.atlas-systems.uk", "https://status.atlas-systems.uk"];
 
 export default {
   async fetch(request, env) {
@@ -20,8 +21,6 @@ export default {
     if (!env.CLOUDFLARE_API_TOKEN || !env.ZONE_TAG) {
       return json(500, { ok: false, error: "Cloudflare credentials are not configured" });
     }
-
-    const ALLOWED_ORIGINS = ["https://atlas-systems.uk", "https://www.atlas-systems.uk", "https://status.atlas-systems.uk"];
 
     
     const ttlSeconds = Number(env.CACHE_TTL_SECONDS || 3600);
