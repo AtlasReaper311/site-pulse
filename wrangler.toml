@@ -15,6 +15,9 @@ routes = [
   { pattern = "api.atlas-systems.uk/site-pulse*", zone_name = "atlas-systems.uk" }
 ]
 
+[triggers]
+crons = ["0 23 * * *"]
+
 [[kv_namespaces]]
 binding = "PULSE_CACHE"
 id = "fe85fc9c743044918a5fd1817ced5421"
