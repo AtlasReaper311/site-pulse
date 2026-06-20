@@ -7,8 +7,8 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname.endsWith("/health")) {
-  return json(200, { ok: true, service: "atlas-notify" }, corsHeaders(request));
-}
+      return json(200, { ok: true, service: "site-pulse" }, corsHeaders(request));
+    }
 
     if (request.method === "GET" && url.pathname.endsWith("/weekly")) {
       return await handleWeekly(env);
@@ -22,7 +22,6 @@ export default {
       return json(500, { ok: false, error: "Cloudflare credentials are not configured" });
     }
 
-    
     const ttlSeconds = Number(env.CACHE_TTL_SECONDS || 3600);
     const cached = await env.PULSE_CACHE.get(CACHE_KEY, { type: "json" });
     if (cached) {
@@ -143,10 +142,10 @@ function json(status, body, extraHeaders = {}) {
 }
 
 function corsHeaders(request) {
-    const origin = request.headers.get("Origin");
-    const headers = { Vary: "Origin" };
-    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+  const origin = request.headers.get("Origin");
+  const headers = { Vary: "Origin" };
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
-    }
-    return headers;
   }
+  return headers;
+}
