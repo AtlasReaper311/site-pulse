@@ -47,7 +47,7 @@ export default {
   // real 24h visit total and stores it under a dated key, working
   // around the platform's 1-day query window by accumulating daily
   // snapshots instead of trying to query a longer range in one call.
-  async scheduled(event, env, ctx) {
+  async scheduled(event, env, _ctx) {
     const summary = await fetchAnalytics(env);
     const today = new Date().toISOString().slice(0, 10);
     await env.PULSE_CACHE.put(
