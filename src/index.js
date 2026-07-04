@@ -1,10 +1,27 @@
+import { handleMeta } from "./_meta.js";
+
 const GRAPHQL_ENDPOINT = "https://api.cloudflare.com/client/v4/graphql";
 const CACHE_KEY = "site-pulse:summary";
 const ALLOWED_ORIGINS = ["https://atlas-systems.uk", "https://www.atlas-systems.uk", "https://status.atlas-systems.uk"];
 
+const META = {
+  name: "site-pulse",
+  description: "Read-only Cloudflare Analytics signal for atlas-systems.uk, cached at the edge",
+  version: "1.0.0",
+  endpoints: [
+    { method: "GET", path: "/site-pulse", description: "Site visit stats for the last 24 hours" },
+    { method: "GET", path: "/site-pulse/weekly", description: "Rolling 7-day visit total from daily snapshots" },
+    { method: "GET", path: "/site-pulse/health", description: "Unauthenticated liveness probe" },
+    { method: "GET", path: "/site-pulse/_meta", description: "This document" },
+  ],
+  source: "https://github.com/AtlasReaper311/site-pulse",
+};
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const meta = handleMeta(url, META);
+    if (meta) return meta;
 
     if (request.method === "GET" && url.pathname.endsWith("/health")) {
       return json(200, { ok: true, service: "site-pulse" }, corsHeaders(request));
